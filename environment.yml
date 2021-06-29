@@ -1,0 +1,10 @@
+name: hw2_env
+dependencies:
+    - python=3.7
+    - pip
+    - pip:
+        - pandas==1.1.5
+        - numpy==1.19.5
+        - opencv-contrib-python==4.1.2.30
+        - torch==1.9.0
+        - torchvision==0.10.0
