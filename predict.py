@@ -53,8 +53,8 @@ def save_response_content(response, destination):
 file_id_1 = '1-3YeUgQsbaRDVLPJdNK1RqgcmxxPEqt0'
 file_id_2 = '11Xl1hw4IRLguUXCKgYT5vprAUBj7UsBg'
 
-DIR_IoU_model = '/content/drive/MyDrive/checkpoint_model2_12000.pth'
-DIR_acc_model = '/content/drive/MyDrive/checkpoint_3_15500.pth'
+DIR_IoU_model = 'checkpoint_model2_12000.pth'
+DIR_acc_model = 'checkpoint_3_15500.pth'
 
 download_file_from_google_drive(file_id_1, DIR_IoU_model)
 download_file_from_google_drive(file_id_2, DIR_acc_model)
@@ -184,14 +184,13 @@ model_Iou = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=Fals
 
 # get number of input features for the classifier
 in_features = model_acc.roi_heads.box_predictor.cls_score.in_features
-in_features = model_Iou.roi_heads.box_predictor.cls_score.in_features
 
 # replace the pre-trained head with a new one
 num_classes = 2
 model_Iou.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 model_acc.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
-checkpoint_iou = torch.load('DIR_IoU_model)
+checkpoint_iou = torch.load(DIR_IoU_model)
 model_Iou.load_state_dict(checkpoint_iou['model_state_dict'])
 
 checkpoint_acc = torch.load(DIR_acc_model)
