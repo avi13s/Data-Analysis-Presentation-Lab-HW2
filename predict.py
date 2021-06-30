@@ -14,7 +14,7 @@ parser.add_argument('input_folder', type=str, help='Input folder path, containin
 args = parser.parse_args()
 
 DIR_Test = args.input_folder
-DIR_pkl = 'checkpoint_4_19500.pth'
+DIR_pkl = 'checkpoint_model2_34000.pth'
 
 
 def check_validity(xmin,xmax,ymin,ymax):
