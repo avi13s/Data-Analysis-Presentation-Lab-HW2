@@ -15,8 +15,11 @@ args = parser.parse_args()
 
 DIR_Test = args.input_folder
 
-# Preparing to download model pickle from google drive
-#taken from this StackOverflow answer: https://stackoverflow.com/a/39225039
+########################################################
+# Preparing to download model pickle from google drive #
+########################################################
+
+# taken from this StackOverflow answer: https://stackoverflow.com/a/39225039
 import requests
 
 def download_file_from_google_drive(id, destination):
@@ -47,9 +50,18 @@ def save_response_content(response, destination):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
 
-file_id = '1-d3fzELRE4X8gHP3J9aawcfKwllTKZ0g'
-DIR_pkl = 'checkpoint_model2_34000.pth'
-download_file_from_google_drive(file_id, DIR_pkl)
+file_id_1 = '1-3YeUgQsbaRDVLPJdNK1RqgcmxxPEqt0'
+file_id_2 = '11Xl1hw4IRLguUXCKgYT5vprAUBj7UsBg'
+
+DIR_IoU_model = '/content/drive/MyDrive/checkpoint_model2_12000.pth'
+DIR_acc_model = '/content/drive/MyDrive/checkpoint_3_15500.pth'
+
+download_file_from_google_drive(file_id_1, DIR_IoU_model)
+download_file_from_google_drive(file_id_2, DIR_acc_model)
+
+#############################################
+# Preprocessing the test data for the model #
+#############################################
 
 
 def check_validity(xmin,xmax,ymin,ymax):
@@ -144,10 +156,10 @@ test_df = path_to_annot_df(DIR_Test)
 def collate_fn(batch):
     return tuple(zip(*batch))
 
-#Test Dataset
+# Test Dataset
 test_dataset = FaceMaskDetectionDataset(test_df, DIR_Test, mode = 'test', transforms = get_transform())
 
-#Test data loader
+# Test data loader
 test_data_loader = DataLoader(
     test_dataset,
     batch_size=1,
@@ -157,65 +169,79 @@ test_data_loader = DataLoader(
     collate_fn=collate_fn
 )
 
-#Loading cuda device and initializing the model
+#############################
+# Loading cuda's and models #
+#############################
 
+
+# Loading cuda device and initializing the model
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 torch.cuda.empty_cache()
 
-#Faster - RCNN Model - not pretrained
-model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
-num_classes = 2
+# Faster - RCNN Model - not pretrained
+model_acc = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
+model_Iou = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
 
 # get number of input features for the classifier
-in_features = model.roi_heads.box_predictor.cls_score.in_features
+in_features = model_acc.roi_heads.box_predictor.cls_score.in_features
+in_features = model_Iou.roi_heads.box_predictor.cls_score.in_features
 
 # replace the pre-trained head with a new one
-model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+num_classes = 2
+model_Iou.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+model_acc.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
-#Retriving all trainable parameters from model (for optimizer)
-params = [p for p in model.parameters() if p.requires_grad]
+checkpoint_iou = torch.load('DIR_IoU_model)
+model_Iou.load_state_dict(checkpoint_iou['model_state_dict'])
 
-#Defininig Optimizer
+checkpoint_acc = torch.load(DIR_acc_model)
+model_acc.load_state_dict(checkpoint_acc['model_state_dict'])
 
-#optimizer = torch.optim.Adam(params, lr = 0.0001)
-optimizer = torch.optim.SGD(params, lr = 0.005, momentum = 0.9)
-
-#LR
-lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.1)
-
-# If have pretrained (own pretrained)
-checkpoint = torch.load(DIR_pkl)
-model.load_state_dict(checkpoint['model_state_dict'])
-optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-model.to(device)
-model.eval()
-
+model_Iou.to(device)
+model_acc.to(device)
+                            
+# initializing df to save the inference results      
 submission = pd.DataFrame(columns = ["filename", "x", "y", "w", "h", "proper_mask"])
+                            
+#############
+# Inference #
+#############
 
-for images, image_names in test_data_loader:
-    #Forward
+model_acc.eval()
+model_Iou.eval()
+                            
+for images, targets, image_names in test_data_loader:
+    #Forward ->
     images = list(image.to(device) for image in images)
-    output = model(images)
-    
+    output_Iou = model_Iou(images, targets)
+    output_acc = model_acc(images, targets)
     #Converting tensors to array
-    boxes = output[0]['boxes'].data.cpu().numpy()
-    scores = output[0]['scores'].data.cpu().numpy()
+    boxes = output_Iou[0]['boxes'].data.cpu().numpy()
+    scores = output_acc[0]['scores'].data.cpu().numpy()
+
 
     # If no box found - we'll give a default prediction of False and a box in the middle
+
     if len(boxes)<1:
-      row = {"filename" : image_names[0], "x" : 0.4*images[0].size()[1],  "y" : 0.4*images[0].size()[2], "w" : 0.2*images[0].size()[1], "h" : 0.2*images[0].size()[2], "proper_mask" : 'False'}
-      submission = submission.append(row, ignore_index = True)
-      continue
-  
+
+      x1 = 0.4*images[0].size()[1]
+      y1 = 0.4*images[0].size()[2]
+      x2 = 0.6*images[0].size()[1]
+      y2 = 0.6*images[0].size()[2]
+    else:
+      x1 = boxes[0][0]
+      y1 = boxes[0][1]
+      x2 = boxes[0][2]
+      y2 = boxes[0][3]
+
+    if len(scores)<1:
+      class_pred = 'False'
+    else:
+      class_pred = 'True' if scores[0]>0.5 else 'False'
     #Bboxes, classname & image name
-    x1 = boxes[0][0]
-    y1 = boxes[0][1]
-    x2 = boxes[0][2]
-    y2 = boxes[0][3]
-    prediction = 'True' if scores[0]>0.5 else 'False'
-    
+        
     #Creating row for df
-    row = {"filename" : image_names[0], "x" : x1, "y" : y1, "w" : x2-x1, "h" : y2-y1, "proper_mask" : prediction}
+    row = {"filename" : image_names[0], "x" : x1, "y" : y1, "w" : x2-x1, "h" : y2-y1, "proper_mask" : class_pred}
     
     #Appending to df
     submission = submission.append(row, ignore_index = True)
