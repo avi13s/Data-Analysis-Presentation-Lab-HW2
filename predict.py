@@ -209,11 +209,11 @@ submission = pd.DataFrame(columns = ["filename", "x", "y", "w", "h", "proper_mas
 model_acc.eval()
 model_Iou.eval()
                             
-for images, targets, image_names in test_data_loader:
+for images, image_names in test_data_loader:
     #Forward ->
     images = list(image.to(device) for image in images)
-    output_Iou = model_Iou(images, targets)
-    output_acc = model_acc(images, targets)
+    output_Iou = model_Iou(images)
+    output_acc = model_acc(images)
     #Converting tensors to array
     boxes = output_Iou[0]['boxes'].data.cpu().numpy()
     scores = output_acc[0]['scores'].data.cpu().numpy()
