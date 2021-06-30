@@ -12,5 +12,5 @@ https://colab.research.google.com/drive/1x0I9yKmsxHXW2uJO6Ba8tXCN-cYHs8LY#scroll
 
 (That is - if you wish to uncover hidden cells or run some things)
 
-Thanks and enjoy the summer :),
+Thanks and enjoy the summer :),\n
 Maxim and Avi
