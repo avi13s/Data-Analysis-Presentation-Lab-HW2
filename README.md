@@ -11,3 +11,6 @@ Included are all the needed files. Two important notes:
 https://colab.research.google.com/drive/1x0I9yKmsxHXW2uJO6Ba8tXCN-cYHs8LY#scrollTo=TegkNbmhNzO9
 
 (That is - if you wish to uncover hidden cells or run some things)
+
+Thanks and enjoy the summer :),
+Maxim and Avi
