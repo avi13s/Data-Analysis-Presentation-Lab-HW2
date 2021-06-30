@@ -113,7 +113,7 @@ class FaceMaskDetectionDataset(Dataset):
         records = self.df[self.df["file_name"] == image_name]
         
         #Loading Image
-        image = cv2.imread(self.image_dir + image_name, cv2.IMREAD_COLOR)
+        image = cv2.imread(self.image_dir +'/' + image_name, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image /= 255.0
         
@@ -208,7 +208,7 @@ submission = pd.DataFrame(columns = ["filename", "x", "y", "w", "h", "proper_mas
 
 model_acc.eval()
 model_Iou.eval()
-                            
+print('starting inference')
 for images, image_names in test_data_loader:
     #Forward ->
     images = list(image.to(device) for image in images)
@@ -217,7 +217,6 @@ for images, image_names in test_data_loader:
     #Converting tensors to array
     boxes = output_Iou[0]['boxes'].data.cpu().numpy()
     scores = output_acc[0]['scores'].data.cpu().numpy()
-
 
     # If no box found - we'll give a default prediction of False and a box in the middle
 
