@@ -1,7 +1,7 @@
 # Data-Analysis-Presentation-Lab-HW2
 Course 094295 HW2 submission
 
-Maxim  | Avi 
+Maxim 318828761 | Avi 312485816
 
 Included are all the needed files. Three important notes:
 * predict.py downloads 3 files while running: 
